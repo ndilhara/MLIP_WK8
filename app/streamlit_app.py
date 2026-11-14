@@ -29,10 +29,13 @@ model = joblib.load(MODEL_PATH)
 st.success("✅ Best model loaded successfully!")
 
 # Display MLflow runs summary (optional)
-if (PROJECT_ROOT / "mlruns").exists():
+MLFLOW_DB_PATH = PROJECT_ROOT / "src" / "mlflow.db"
+if MLFLOW_DB_PATH.is_file():
     try:
         from mlflow.tracking import MlflowClient
-        client = MlflowClient()
+
+        tracking_uri = f"sqlite:///{MLFLOW_DB_PATH}"
+        client = MlflowClient(tracking_uri=tracking_uri)
         exp = client.get_experiment_by_name("house_price_prediction")
         if exp:
             runs = client.search_runs([exp.experiment_id], order_by=["metrics.R2 DESC"])
@@ -48,8 +51,12 @@ if (PROJECT_ROOT / "mlruns").exists():
                 ]
             )
             st.dataframe(df_runs)
+        else:
+            st.info("No `house_price_prediction` experiment was found in the MLflow database.")
     except Exception as e:
         st.warning(f"Could not fetch MLflow experiments: {e}")
+else:
+    st.info(f"No MLflow database found at `{MLFLOW_DB_PATH}`.")
 
 # Sidebar input
 st.sidebar.header("Input Features")
